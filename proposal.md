@@ -43,8 +43,8 @@ As in the real world this would be a 3 step procedure.
 Let's say Alex wants to swap an NFT. This can be done in two ways.
  1. Swap with a specific NFT
  2. Swap with a random NFT 
- ### case 1: 
-Alex **Initiates** the swap and **Offer** an NFT. Bob will **Accept** the swap. 
+### case 1: 
+Alex **Initiates** the swap and **Offer** an NFT. Bob can **Accept** the swap and NFT will be swaped. 
 Bob can also reject the swap. In that case NFT swap will be reset. So, Alex will have to reinitiate the swap if he wants to.  Alex can also cancel the swap 
 anytime before the reject and accept.
 ### case 2:
