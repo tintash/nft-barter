@@ -33,5 +33,20 @@ https://nftrade.com/swaps
 They have launched a nft swap standard on polygon as per below blog post
 https://bitcoinist.com/ethereum-ox-deploys-nft-swap-standard-on-polygon/#:~:text=The%20NFTr%20Swap%20standard%2C%20according,the%20sector%20across%20multiple%20blockchains.
 
+## Implementation
+As in the real world this would be a 3 step procedure.
 
+  1. Initiate 
+  2. Offer
+  3. Accept
+
+Let's say Alex wants to swap an NFT. This can be done in two ways.
+ 1. Swap with a specific NFT
+ 2. Swap with a random NFT 
+ ### case 1: 
+Alex **Initiates** the swap and **Offer** an NFT. Bob will **Accept** the swap. 
+Bob can also reject the swap. In that case NFT swap will be reset. So, Alex will have to reinitiate the swap if he wants to.  Alex can also cancel the swap 
+anytime before the reject and accept.
+### case 2:
+In second case Alex puts his nft to swap by **Initiating**. Multiple persons who has the NFTs could **Offer** to swap their NFTs. Alex can **Accept** any NFT and nft will be swaped. Alex can also cancel his swap anytime before the transfer. 
 
