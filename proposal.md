@@ -4,7 +4,7 @@ Title: nft-barter Proposal document
 
 ## Abstract 
 This nft-barter is an open market where you can mint, buy, sell and swap NFTs within collection. The mint, buy and sell funtionality will be
-the standard mplementation of ERC-721 with some add-ons. NFT-barter comes in where user can list item for swap, propose swap,
+the standard iplementation of ERC-721 with some add-ons. NFT-barter comes in where user can list item for swap, propose swap,
 execute swap and pay-receive.
 
 ## Motivation
