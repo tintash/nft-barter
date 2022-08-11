@@ -2,10 +2,25 @@
 
 Title: nft-barter Proposal document 
 
+## Simple Summary
+
+A standardized way to swap an NFT  with exchanging value in native or erc20 tokens.
+
+1. Swap NFT of the same collection (contract) and chain and transfer native tokens to pay the difference
+2. Swap NFT of different collections but the same chain and transfer native tokens to pay the difference
+3. Swap NFT of different collections and different chains (EVM compatible) and transfer erc20 or native tokens to pay the difference
+
 ## Abstract 
-This nft-barter is an open market where you can mint, buy, sell and swap NFTs within collection. The mint, buy and sell funtionality will be
-the standard implementation of ERC-721 with some add-ons. NFT-barter comes in where user can list item for swap, propose swap,
-execute swap and pay-receive.
+This standard allows contracts, such as NFTs that support [ERC-721](https://eips.ethereum.org/EIPS/eip-721) and [ERC-1155](https://eips.ethereum.org/EIPS/eip-1155) interfaces to swap erc721 tokens and pay the difference of value in native or erc20 token. To initiate a Barter there are two ways 
+1. Make a swap request directly to another address 
+2. Create signed orders in the book and match order 
+The swap-pay implementation should be independent of transferFrom(). Although it can use transferFrom().
+UserA, an nft holder should be able to set his nft for swapping. We can call this swapActiveList.
+UserB, an nft holder can create a swap request with another nft out of swapActiveList. We can call this user maker since he creates the request. We can keep all the swap requests in swapRequestList
+UserA, can see the swapRequestList and execute a request if he wishes to so userA becomes a taker since he fulfills the order.
+ExchangeValue parameter should denote the value to be exchanged along with the swap. An exchange value of 0 means the offerer wants to swap the tokens without any value transfer. A positive exchange value means the offerer is offering some funds in the addition to the offered token, whereas a negative exchange value means the offerer is requesting funds in part of the deal. (If a positive value is given, the exact amount of funds must have been sent with the transaction.)
+On executing the order the required nfts should be transferred to each other along with exchange value in native or erc20 token.
+Taker should also be able to cancel the offer which should remove the offer from swapRequestList.
 
 ## Motivation
 This idea is a widespread use case of trading / exchanging goods in both virtual and real world
@@ -36,13 +51,23 @@ As in the real world this would be a 3 step procedure.
   3. Accept
 
 Let's say Alex wants to swap an NFT, it can be done in two ways.
- 1. Swap with a specific NFT
+ 1. Swap with a fixed NFT
  2. Swap with any NFT 
 ### Case 1: 
 Alex **Initiates** the swap and **Offer** an NFT. The will be saved in contract state. Bob sees his NFT listed as swap with two options
 i) Accept ii) Reject. If Bob **Accept** the swap the NFTs will be swapped. 
 Bob can also reject the swap. In that case NFT swap will be reset. So, Alex will have to reinitiate the swap if he wants to.  Alex can also cancel the swap 
 anytime before the reject and accept.
+<p align = "center">This diagram explains swap for a fixed nft
+  
+<img src = "/diagrams/fixed-nft/sequence.svg" alt = "sequence diagram for a fixed nft swap">
+</p>
+
 ### Case 2:
 Alex puts his nft to swap by **Initiating**. Multiple persons see Alex's swap listed, they can **Offer** the exchange with their on NFTs.  Alex **Accept** any NFT and nft will be swapped. Alex can also cancel his swap anytime before the transfer. 
+
+<p align = "center">This diagram explains swap for an arbitrary nft
+  
+<img src = "/diagrams/arbitrary-nft/sequence.svg" alt = "sequence diagram for an arbitrary nft swap">
+</p>
 
