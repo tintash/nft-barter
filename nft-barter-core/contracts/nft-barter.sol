@@ -8,7 +8,7 @@ contract NFTBarter is ERC721, INFTFixedBarter {
     string private constant INVALID_TOKEN_ID = "1000: invalid token id";
     string private constant PERMISSION_DENIED = "1001: permission denied";
     string private constant INVALID_SWAP = "1002: invalid swap";
-    string private constant USELESS_SWAP = "1003: useless swap"; //swap is not useble anymore some informatino in the swap is probably changed like ownership
+    string private constant USELESS_SWAP = "1003: useless swap"; //swap is not useable anymore some informatino in the swap is probably changed like ownership
 
     //mapping based on swapId
     mapping(uint128 => SwapOrder) private _swaps;
