@@ -10,16 +10,8 @@ contract NFTBarter is ERC721, INFTFixedBarter {
     string private constant INVALID_SWAP = "1002: invalid swap";
     string private constant USELESS_SWAP = "1003: useless swap"; //swap is not useble anymore some informatino in the swap is probably changed like ownership
 
-    //TODO optimize swaps mapping, use only one of them if possible
-
     //mapping based on swapId
     mapping(uint128 => SwapOrder) private _swaps;
-
-    //mapping token ids to Swap Orders for both makers and takers
-    // mapping(uint => SwapOrder) private _swapsForToken;
-
-    //mapping based on address to swaps
-    // mapping (address => SwapOrder) private _swapsForAccount;
 
     //swapId generator
     uint128 private _swapCounter;
@@ -187,14 +179,6 @@ contract NFTBarter is ERC721, INFTFixedBarter {
         return true;
     }
 
-    // function listSwapsForTokenId(uint tokenId) view public override returns(SwapOrder[] memory){
-
-    // }
-
-    // function listSwapsForAddress(address account) view public override returns(SwapOrder[] memory){
-
-    // }
-
     function isSwapPossible(uint128 swapId)
         public
         view
@@ -210,26 +194,11 @@ contract NFTBarter is ERC721, INFTFixedBarter {
     }
 
     function _updateSwapsData(SwapOrder memory swap) private {
-        //todo find a way to avoid duplication of data
-        // _swapsForToken[swap.makerTokenId] = swap;
-        // _swapsForToken[swap.takerTokenId] = swap;
-
-        // _swapsForAccount[swap.makerAddress] = swap;
-        // _swapsForAccount[swap.takerAddress] = swap;
         _swaps[swap.swapId] = swap;
     }
 
-    function _clearSwapsData(uint128 swapId)
-        private
-        returns (SwapOrder memory)
-    {
+    function _clearSwapsData(uint128 swapId) private returns (SwapOrder memory){
         SwapOrder memory swap = _swaps[swapId];
-
-        // delete _swapsForToken[swap.makerTokenId];
-        // delete _swapsForToken[swap.takerTokenId];
-
-        // delete _swapsForAccount[swap.makerAddress];
-        // delete _swapsForAccount[swap.takerAddress];
 
         delete _swaps[swap.swapId];
 
