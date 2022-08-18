@@ -11,7 +11,7 @@ const {
   EVENT_SWAP_CANCELED,
   EVENT_SWAP_ACCEPTED,
 } = require("./test-helpers");
-const nft_barter = artifacts.require("NftBarter");
+const nft_barter = artifacts.require("NFTBarter");
 
 contract("NFT Barter", (accounts) => {
   const name = "Rupees";
