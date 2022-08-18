@@ -2,9 +2,9 @@
 pragma solidity ^0.8.15;
 
 /**
-@title an interface for swaping nfts
+@title an interface for swaping NFTs
 @author Asim Mehmood
-@notice the contract enable users to swap their nft any other nft
+@notice the contract enable users to swap their NFT with any other NFT
 @dev It descriebe the signature to accept swaps given its swap id  and list all the swaps for token id
  */
 abstract contract INFTBarter {
@@ -21,9 +21,9 @@ abstract contract INFTBarter {
         uint takerTokenId;
     }
     /**
-    @notice make swap between nft stored for thei swapID
-    @dev this methods accept an already initiated swaps with a swap id and transfer nft to each user specified in the swap.
-    @param swapId The swapId agaisn which swapd has to be performed
+    @notice perform the swap with swapId between NFTs
+    @dev this methods accept an already initiated swaps with a swap id and transfer NFT to each user specified in the swap.
+    @param swapId The swapId agaist which swapd has to be performed
     @param takerTokenId The token id of the taker of the swap
     @return true if the swap is successfull and false if swaps fails
      */
@@ -31,7 +31,7 @@ abstract contract INFTBarter {
 
     /**
     @notice list all the swaps for the provided tokenId
-    @dev this methods returns all the swaps stored in a mapping against tgat token id, 
+    @dev this methods returns all the swaps stored in a mapping against that token id, 
     @param tokenId token id of the maker/taker of the swap
     @return list of all the swaps for that token id as maker/taker
      */

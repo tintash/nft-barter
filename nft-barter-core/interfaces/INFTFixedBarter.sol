@@ -4,18 +4,18 @@ pragma solidity ^0.8.15;
 import "./INFTBarter.sol";
 
 /**
-@title an interface for swaping nfts
+@title an interface for swaping NFTs
 @author Asim Mehmood
 @notice This interface declares how a user can swap with a fixed NFT
-@dev this contains functions needed to swap an nft within a collection, It uses all the methods from INFTBarter.sol
+@dev this contains functions needed to swap an NFT within a collection, It uses all the methods from INFTBarter.sol
  */
 abstract contract INFTFixedBarter is INFTBarter {
     /**
-    @notice the started the process of swap between two fixed nfts
-    @dev this initiates the swap for two fixed nfts , it creates an entry in the maps for swap list , with token id's and address 
+    @notice It starts the process of swap between two fixed NFTs
+    @dev this initiates the swap for two fixed NFTs , it creates an entry in the maps for swap list , with token id's and address 
     @param makerTokenId token id of maker of this swap
     @param takerTokenId token id of the taker of this swap
-    @param valueDifference the value that the maker is willing to pay/receive for this swap 0 means there is nothign to pay, postive value means maker wants to pay that much, negative value means maker want to recieve that much
+    @param valueDifference the value that the maker is willing to pay/receive for this swap, 0 means there is nothign to pay, postive value means maker wants to pay that much, negative value means maker want to recieve that much
      */
     function initiateFixedSwap(uint makerTokenId, uint takerTokenId, int152 valueDifference) external virtual returns(SwapOrder memory);
 
