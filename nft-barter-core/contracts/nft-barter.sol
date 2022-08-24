@@ -22,8 +22,8 @@ contract NFTBarter is ERC721, INFTFixedBarter {
 
     //modifiers
     modifier onlyIfTokenIsValid(uint256 tokenId) {
-      require(ERC721._exists(tokenId), INVALID_TOKEN_ID);
-      _;
+        require(ERC721._exists(tokenId), INVALID_TOKEN_ID);
+        _;
     }
 
     modifier onlyIfValidSwap(uint256 makerTokenId, uint256 takerTokenId) {
@@ -76,11 +76,9 @@ contract NFTBarter is ERC721, INFTFixedBarter {
         onlyIfValidSwap(makerTokenId, takerTokenId)
         returns (SwapOrder memory)
     {
-        address takerAddress = ERC721.ownerOf(takerTokenId);
-
         SwapOrder memory swap = SwapOrder(
             msg.sender,
-            takerAddress,
+            ERC721.ownerOf(takerTokenId),
             valueDifference,
             _getNextId(),
             makerTokenId,
@@ -186,21 +184,21 @@ contract NFTBarter is ERC721, INFTFixedBarter {
         returns (bool)
     {
         SwapOrder memory swap = _swaps[swapId];
-        address maker = ERC721.ownerOf(swap.makerTokenId);
-        if (maker != swap.makerAddress) return false;
-        address taker = ERC721.ownerOf(swap.takerTokenId);
-        if (taker != swap.takerAddress) return false;
-        return true;
+        return (ERC721.ownerOf(swap.makerTokenId) == swap.makerAddress &&
+            ERC721.ownerOf(swap.takerTokenId) == swap.takerAddress);
     }
 
     function _updateSwapsData(SwapOrder memory swap) private {
         _swaps[swap.swapId] = swap;
     }
 
-    function _clearSwapsData(uint128 swapId) private returns (SwapOrder memory){
+    function _clearSwapsData(uint128 swapId)
+        private
+        returns (SwapOrder memory)
+    {
         SwapOrder memory swap = _swaps[swapId];
 
-        delete _swaps[swap.swapId];
+        delete _swaps[swapId];
 
         return swap;
     }
