@@ -10,14 +10,14 @@ const {
   EVENT_SWAP_UPDATED,
   EVENT_SWAP_CANCELED,
   EVENT_SWAP_ACCEPTED,
-  ERROR_INSUFFICIENT_BALANCE,
+  INVALID_BALANCE_TRANSFERRED,
 } = require("./test-helpers");
 const nft_barter = artifacts.require("NFTBarter");
 
 contract("NFT Barter", (accounts) => {
   const name = "Rupees";
   const symbol = "Rs";
-  const valueDifference = 2;
+  const valueDifference = 20000000;
   const swapId = 1,
     invalidSwapId = 100;
   const invalidTokenId = 100,
@@ -25,8 +25,10 @@ contract("NFT Barter", (accounts) => {
     makerTokenId = 3;
   const [takerAddress, makerAddress, address3] = accounts;
   let tokenInstance;
+  let contractTracker;
   beforeEach("initializing token instance", async () => {
     tokenInstance = await nft_barter.new(name, symbol);
+    contractTracker = await balance.tracker(tokenInstance.address);
 
     // minting token id for maker address
     await tokenInstance.mint(makerTokenId, {
@@ -57,7 +59,8 @@ contract("NFT Barter", (accounts) => {
   });
 
   it("initiateFixedSwap", async () => {
-    const response = await tokenInstance.initiateFixedSwap(
+    // Maker to Taker Swap
+    const makerToTakerSwap = await tokenInstance.initiateFixedSwap(
       makerTokenId,
       takerTokenId,
       valueDifference,
@@ -65,7 +68,7 @@ contract("NFT Barter", (accounts) => {
         from: makerAddress,
       }
     );
-    const expectedSwap = {
+    const expectedSwap1 = {
       swapId: BN(2),
       makerTokenId: BN(makerTokenId),
       takerTokenId: BN(takerTokenId),
@@ -74,7 +77,39 @@ contract("NFT Barter", (accounts) => {
       valueDifference: BN(valueDifference),
     };
 
-    checkDataFromEvent(response, "swap", expectedSwap, EVENT_SWAP_INITIATED);
+    checkDataFromEvent(
+      makerToTakerSwap,
+      "swap",
+      expectedSwap1,
+      EVENT_SWAP_INITIATED
+    );
+
+    // Taker to Maker Swap
+    const takerToMakerValueDifference = -3;
+    const takerToMakerSwap = await tokenInstance.initiateFixedSwap(
+      makerTokenId,
+      takerTokenId,
+      takerToMakerValueDifference,
+      {
+        from: makerAddress,
+        value: Math.abs(takerToMakerValueDifference),
+      }
+    );
+    const expectedSwap2 = {
+      swapId: BN(3),
+      makerTokenId: BN(makerTokenId),
+      takerTokenId: BN(takerTokenId),
+      makerAddress,
+      takerAddress,
+      valueDifference: BN(takerToMakerValueDifference),
+    };
+
+    checkDataFromEvent(
+      takerToMakerSwap,
+      "swap",
+      expectedSwap2,
+      EVENT_SWAP_INITIATED
+    );
   });
 
   it("initiateFixedSwap - failure cases", async () => {
@@ -113,6 +148,20 @@ contract("NFT Barter", (accounts) => {
       ),
       ERROR_INVALID_SWAP
     );
+
+    // invalid balance transfer
+    const negativeValueDifference = -5;
+    await truffleAssert.reverts(
+      tokenInstance.initiateFixedSwap.call(
+        makerTokenId,
+        takerTokenId,
+        negativeValueDifference,
+        {
+          from: makerAddress,
+        }
+      ),
+      INVALID_BALANCE_TRANSFERRED
+    );
   });
 
   /**
@@ -120,12 +169,14 @@ contract("NFT Barter", (accounts) => {
    */
 
   it("updateSwapValue", async () => {
-    const valueDifference = 10;
-    const response = await tokenInstance.updateSwapValue(
+    // positive value to negative value update
+    const negativeValueDifference = -100000000000;
+    const postiveToNegativeUpdate = await tokenInstance.updateSwapValue(
       swapId,
-      valueDifference,
+      negativeValueDifference,
       {
         from: makerAddress,
+        value: Math.abs(negativeValueDifference),
       }
     );
     const expectedSwap = {
@@ -134,15 +185,91 @@ contract("NFT Barter", (accounts) => {
       takerTokenId: BN(takerTokenId),
       makerAddress,
       takerAddress,
-      valueDifference: BN(valueDifference),
+      valueDifference: BN(negativeValueDifference),
     };
 
+    // checking event here
     checkDataFromEvent(
-      response,
+      postiveToNegativeUpdate,
       "updatedSwap",
       expectedSwap,
       EVENT_SWAP_UPDATED
     );
+
+    // check contract's balance here. It should be equal to negativeValueDifference
+    let cBalance = await contractTracker.get();
+    assert.equal(cBalance, Math.abs(negativeValueDifference));
+
+    // lower to higher -ve value update
+    const lowerToHigherValueDifference = -150000000000;
+    const lowerToHigherNegative = await tokenInstance.updateSwapValue(
+      swapId,
+      lowerToHigherValueDifference,
+      {
+        from: makerAddress,
+        value: Math.abs(lowerToHigherValueDifference - negativeValueDifference),
+      }
+    );
+    expectedSwap.valueDifference = BN(lowerToHigherValueDifference);
+
+    // checking event here
+    checkDataFromEvent(
+      lowerToHigherNegative,
+      "updatedSwap",
+      expectedSwap,
+      EVENT_SWAP_UPDATED
+    );
+
+    // check contract's balance here. It should be equal to lowerToHigherValueDifference
+    cBalance = await contractTracker.get();
+    assert.equal(cBalance, Math.abs(lowerToHigherValueDifference));
+
+    // higher to lower -ve value update
+    const higherToLowerValueDifference = -90000000000;
+    const higherToLowerNegative = await tokenInstance.updateSwapValue(
+      swapId,
+      higherToLowerValueDifference,
+      {
+        from: makerAddress,
+      }
+    );
+
+    expectedSwap.valueDifference = BN(higherToLowerValueDifference);
+
+    // checking event here
+    checkDataFromEvent(
+      higherToLowerNegative,
+      "updatedSwap",
+      expectedSwap,
+      EVENT_SWAP_UPDATED
+    );
+
+    // check contract's balance here. It should be equal to lowerToHigherValueDifference
+    cBalance = await contractTracker.get();
+    assert.equal(cBalance, Math.abs(higherToLowerValueDifference));
+
+    // -ve to +ve update
+    const postiveValueDifference = 90000000000;
+    const negativeToPositive = await tokenInstance.updateSwapValue(
+      swapId,
+      postiveValueDifference,
+      {
+        from: makerAddress,
+      }
+    );
+    expectedSwap.valueDifference = BN(postiveValueDifference);
+
+    // checking event here
+    checkDataFromEvent(
+      negativeToPositive,
+      "updatedSwap",
+      expectedSwap,
+      EVENT_SWAP_UPDATED
+    );
+
+    // check contract's balance here. It should be equal to lowerToHigherValueDifference
+    cBalance = await contractTracker.get();
+    assert.equal(cBalance, 0);
   });
 
   it("updateSwapValue - failure cases", async () => {
@@ -158,6 +285,32 @@ contract("NFT Barter", (accounts) => {
         from: address3,
       }),
       ERROR_PERMISSION_DENIED
+    );
+
+    // updating positive value to negative without transferring amount
+    const negativeValueDifference = -100000000000;
+    await truffleAssert.reverts(
+      tokenInstance.updateSwapValue.call(swapId, negativeValueDifference, {
+        from: makerAddress,
+      }),
+      INVALID_BALANCE_TRANSFERRED
+    );
+
+    // updating lower to negative value without transferring funds
+    await tokenInstance.updateSwapValue(
+      swapId,
+      negativeValueDifference,
+      {
+        from: makerAddress,
+        value: Math.abs(negativeValueDifference),
+      }
+    );
+    const higherNegativeValue = -200000000000;
+    await truffleAssert.reverts(
+      tokenInstance.updateSwapValue.call(swapId, higherNegativeValue, {
+        from: makerAddress,
+      }),
+      INVALID_BALANCE_TRANSFERRED
     );
   });
 
@@ -273,11 +426,16 @@ contract("NFT Barter", (accounts) => {
    * Tests for Swap actions
    */
   it("cancelSwap", async () => {
+    // positive value difference
+    let cBalance = await contractTracker.get();
+    assert.equal(cBalance, 0);
     const canceledSwap = await tokenInstance.cancelSwap(swapId, {
       from: makerAddress,
     });
+    cBalance = await contractTracker.get();
+    assert.equal(cBalance, 0);
 
-    const expectedSwap = {
+    let expectedSwap = {
       swapId: BN(1),
       makerTokenId: BN(makerTokenId),
       takerTokenId: BN(takerTokenId),
@@ -287,6 +445,31 @@ contract("NFT Barter", (accounts) => {
     };
 
     checkDataFromEvent(canceledSwap, "swap", expectedSwap, EVENT_SWAP_CANCELED);
+
+    // negative value difference 
+    const negativeValueDifference = -100000000000;
+    await tokenInstance.initiateFixedSwap(
+      makerTokenId,
+      takerTokenId,
+      negativeValueDifference,
+      {
+        from: makerAddress,
+        value: Math.abs(negativeValueDifference)
+      }
+    );
+    cBalance = await contractTracker.get();
+    assert.equal(cBalance, Math.abs(negativeValueDifference));
+    // cancelling swap
+    const canceledSwap1 = await tokenInstance.cancelSwap(2, {
+      from: makerAddress,
+    });
+    cBalance = await contractTracker.get();
+    assert.equal(cBalance, 0);
+
+    expectedSwap.swapId = BN(2);
+    expectedSwap.valueDifference = BN(negativeValueDifference);
+
+    checkDataFromEvent(canceledSwap1, "swap", expectedSwap, EVENT_SWAP_CANCELED);
   });
 
   it("cancelSwap - failure cases", async () => {
@@ -303,16 +486,17 @@ contract("NFT Barter", (accounts) => {
   });
 
   it("acceptSwap", async () => {
-    // transferring the amount to contract to make the swap successful
-    await tokenInstance.send(valueDifference, { from: takerAddress });
-    let takerBalanceInContract = await tokenInstance.checkBalance.call({ from: takerAddress });
-    assert.equal(takerBalanceInContract.toString(), String(valueDifference));
-    // accepting the swap
-    const acceptedSwap = await tokenInstance.acceptSwap(swapId, takerTokenId, {
+    // accepting the swap - with positive value
+    let cBalance = await contractTracker.get();
+    assert.equal(cBalance, 0);
+    const acceptedSwapPositiveVD = await tokenInstance.acceptSwap(swapId, takerTokenId, {
       from: takerAddress,
+      value: valueDifference
     });
+    cBalance = await contractTracker.get();
+    assert.equal(cBalance, 0);
 
-    const expectedSwap = {
+    let expectedSwap = {
       swapId: BN(1),
       makerTokenId: BN(makerTokenId),
       takerTokenId: BN(takerTokenId),
@@ -321,11 +505,36 @@ contract("NFT Barter", (accounts) => {
       valueDifference: BN(valueDifference),
     };
 
-    checkDataFromEvent(acceptedSwap, "swap", expectedSwap, EVENT_SWAP_ACCEPTED);
+    checkDataFromEvent(acceptedSwapPositiveVD, "swap", expectedSwap, EVENT_SWAP_ACCEPTED);
+    
+    // accepting the swap - with negative value
+    const negativeValueDifference = -100000000000;
+    await tokenInstance.initiateFixedSwap(
+      takerTokenId,
+      makerTokenId,
+      negativeValueDifference,
+      {
+        from: makerAddress,
+        value: Math.abs(negativeValueDifference)
+      }
+    );
 
-    // checking the balance if it's 0 again.
-    takerBalanceInContract = await tokenInstance.checkBalance.call({ from: takerAddress });
-    assert.equal(takerBalanceInContract.toString(), "0");
+    cBalance = await contractTracker.get();
+    assert.equal(cBalance, Math.abs(negativeValueDifference));
+
+    const acceptedSwapNegativeVD = await tokenInstance.acceptSwap(2, makerTokenId, {
+      from: takerAddress,
+    });
+
+    cBalance = await contractTracker.get();
+    assert.equal(cBalance, 0);
+
+    expectedSwap.swapId = BN(2);
+    expectedSwap.valueDifference = BN(negativeValueDifference);
+    expectedSwap.makerTokenId = BN(takerTokenId);
+    expectedSwap.takerTokenId = BN(makerTokenId);
+
+    checkDataFromEvent(acceptedSwapNegativeVD, "swap", expectedSwap, EVENT_SWAP_ACCEPTED);
   });
 
   it("acceptSwap - failure cases", async () => {
@@ -349,7 +558,7 @@ contract("NFT Barter", (accounts) => {
       tokenInstance.acceptSwap.call(swapId, takerTokenId, {
         from: takerAddress,
       }),
-      ERROR_INSUFFICIENT_BALANCE
+      INVALID_BALANCE_TRANSFERRED
     );
   });
 
@@ -357,9 +566,9 @@ contract("NFT Barter", (accounts) => {
     const isSwapPossible = await tokenInstance.isSwapPossible.call(swapId);
     assert.isTrue(isSwapPossible);
 
-    await tokenInstance.send(valueDifference, { from: takerAddress });
     await tokenInstance.acceptSwap(swapId, takerTokenId, {
       from: takerAddress,
+      value: valueDifference
     });
 
     const swapShouldNotBePossible = await tokenInstance.isSwapPossible.call(
@@ -391,9 +600,9 @@ contract("NFT Barter", (accounts) => {
       }
     );
     // accepting the swap to invalidate the first swap
-    await tokenInstance.send(valueDifference, { from: address3 });
     await tokenInstance.acceptSwap(swapAddr3AndMaker, addr3TokenId, {
       from: address3,
+      value: valueDifference
     });
 
     const isInitialSwapPossible = await tokenInstance.isSwapPossible.call(

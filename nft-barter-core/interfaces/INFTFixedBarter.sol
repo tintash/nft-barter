@@ -17,14 +17,14 @@ abstract contract INFTFixedBarter is INFTBarter {
     @param takerTokenId token id of the taker of this swap
     @param valueDifference the value that the maker is willing to pay/receive for this swap, 0 means there is nothign to pay, postive value means maker wants to pay that much, negative value means maker want to recieve that much
      */
-    function initiateFixedSwap(uint makerTokenId, uint takerTokenId, int152 valueDifference) external virtual returns(SwapOrder memory);
+    function initiateFixedSwap(uint makerTokenId, uint takerTokenId, int152 valueDifference) payable external virtual returns(SwapOrder memory);
 
     /**
     @notice updates the difference value of a swap
     @param swapId swapId for swap to modify
     @param valueDifference new value for this swap
      */
-    function updateSwapValue(uint128 swapId, int152 valueDifference) external virtual returns(SwapOrder memory);
+    function updateSwapValue(uint128 swapId, int152 valueDifference) external payable virtual returns(SwapOrder memory);
 
     /**
     @notice updates the nft for maker of the swap
@@ -46,5 +46,5 @@ abstract contract INFTFixedBarter is INFTBarter {
     @param swapId swapId of the swap to be canceled
     @return true of swap is canceled , false if swap could not be canceled for some reason
      */
-    function cancelSwap(uint128 swapId) external virtual returns(SwapOrder memory);
+    function cancelSwap(uint128 swapId) external payable virtual returns(SwapOrder memory);
 }

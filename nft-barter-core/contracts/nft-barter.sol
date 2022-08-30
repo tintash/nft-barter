@@ -9,14 +9,12 @@ contract NFTBarter is ERC721, INFTFixedBarter {
     string private constant PERMISSION_DENIED = "1001: permission denied";
     string private constant INVALID_SWAP = "1002: invalid swap";
     string private constant USELESS_SWAP = "1003: useless swap"; //swap is not useable anymore some informatino in the swap is probably changed like ownership
-    string private constant INSUFFICIENT_BALANCE = "1004: insufficient balance";
+    string private constant INVALID_BALANCE_TRANSFERRED =
+        "1004: invalid balance transferred";
     string private constant TX_FAILED = "1005: transaction failed";
 
     //mapping based on swapId
     mapping(uint128 => SwapOrder) private _swaps;
-
-    //mapping to keep record for user's balance transferred
-    mapping(address => uint256) private _ledger;
 
     //swapId generator
     uint128 private _swapCounter;
@@ -72,10 +70,6 @@ contract NFTBarter is ERC721, INFTFixedBarter {
     event SwapCanceled(SwapOrder swap);
     event SwapAccepted(SwapOrder swap);
 
-    receive() external payable {
-        _ledger[msg.sender] += msg.value;
-    }
-
     //implementation
     function mint(uint256 tokenId) external {
         ERC721._safeMint(msg.sender, tokenId);
@@ -87,10 +81,18 @@ contract NFTBarter is ERC721, INFTFixedBarter {
         int152 valueDifference
     )
         external
+        payable
         override
         onlyIfValidSwap(makerTokenId, takerTokenId)
         returns (SwapOrder memory)
     {
+        // maker should transfer if the valueDifference is negative
+        if (valueDifference < 0) {
+            require(
+                msg.value == _abs(valueDifference),
+                INVALID_BALANCE_TRANSFERRED
+            );
+        }
         address takerAddress = ERC721.ownerOf(takerTokenId);
 
         SwapOrder memory swap = SwapOrder(
@@ -110,6 +112,7 @@ contract NFTBarter is ERC721, INFTFixedBarter {
 
     function updateSwapValue(uint128 swapId, int152 valueDifference)
         external
+        payable
         override
         onlyIfSwapExists(swapId)
         onlyIfMaker(swapId)
@@ -117,6 +120,9 @@ contract NFTBarter is ERC721, INFTFixedBarter {
     {
         SwapOrder memory swap = _swaps[swapId];
         swap.valueDifference = valueDifference;
+
+        // make appropriate transfers
+        _adjustValueDifference(valueDifference, swapId);
 
         _updateSwapsData(swap);
 
@@ -158,12 +164,20 @@ contract NFTBarter is ERC721, INFTFixedBarter {
 
     function cancelSwap(uint128 swapId)
         external
+        payable
         override
         onlyIfSwapExists(swapId)
         onlyIfParticipant(swapId)
         returns (SwapOrder memory)
     {
         SwapOrder memory clearedSwap = _clearSwapsData(swapId);
+        // contract should transfer maker if the valueDifference is negative
+        if (clearedSwap.valueDifference < 0) {
+            _transferAmount(
+                clearedSwap.makerAddress,
+                _abs(clearedSwap.valueDifference)
+            );
+        }
         emit SwapCanceled(clearedSwap);
         return clearedSwap;
     }
@@ -180,6 +194,12 @@ contract NFTBarter is ERC721, INFTFixedBarter {
         require(isSwapPossible(swapId), USELESS_SWAP);
         SwapOrder memory swap = _swaps[swapId];
         require(swap.takerTokenId == takerTokenId, INVALID_TOKEN_ID); //todo: discuss with team wheather to include this or not
+        uint256 transferAmount = _abs(swap.valueDifference);
+        // check if taker has transferred the amount in case valueDifference is positive
+        if (swap.valueDifference > 0) {
+            require(transferAmount == msg.value, INVALID_BALANCE_TRANSFERRED);
+        }
+        // swapping tokens
         ERC721._transfer(
             swap.makerAddress,
             swap.takerAddress,
@@ -190,29 +210,16 @@ contract NFTBarter is ERC721, INFTFixedBarter {
             swap.makerAddress,
             swap.takerTokenId
         );
-        if (swap.valueDifference < 0) {
-            _transferAmount(
-                swap.makerAddress,
-                swap.takerAddress,
-                _abs(swap.valueDifference)
-            );
-        } else if (swap.valueDifference > 0) {
-            _transferAmount(
-                swap.takerAddress,
-                swap.makerAddress,
-                _abs(swap.valueDifference)
-            );
+        // transfer the value to maker if valueDifference is positive
+        if (swap.valueDifference > 0) {
+            _transferAmount(swap.makerAddress, transferAmount);
+        }
+        // transfer the value to taker if valueDifference is negative
+        else if (swap.valueDifference < 0) {
+            _transferAmount(swap.takerAddress, transferAmount);
         }
         emit SwapAccepted(swap);
         return true;
-    }
-
-    function withdrawAmount(uint256 amount) external payable {
-        _transferAmount(msg.sender, msg.sender, amount);
-    }
-
-    function checkBalance() external view returns (uint256) {
-        return _ledger[msg.sender];
     }
 
     function isSwapPossible(uint128 swapId)
@@ -253,17 +260,47 @@ contract NFTBarter is ERC721, INFTFixedBarter {
         return _swapCounter;
     }
 
-    function _transferAmount(
-        address from,
-        address to,
-        uint256 amount
-    ) private {
-        // checking from's account
-        require(amount <= _ledger[from], INSUFFICIENT_BALANCE);
-        // subtracting the amount in ledger
-        _ledger[from] -= amount;
-        // transferring the amount to `to`
+    function _transferAmount(address to, uint256 amount) private {
         (bool sent, ) = payable(to).call{value: amount}("");
         require(sent, TX_FAILED);
+    }
+
+    function _adjustValueDifference(int152 valueDifference, uint128 swapId)
+        private
+    {
+        // ignoring transfers since they will be done by taker on accepting swap
+        if (valueDifference >= 0 && _swaps[swapId].valueDifference >= 0) return;
+
+        /** 
+        Transferring conditions:
+         - maker transfers if:
+           - old value is +ve and new value is -ve
+           - old value is -ve and higher than the new value
+         - contract transfers if 
+           - old value is -ve and new value is +ve
+           - old & new values are -ve and old value is lower than the new value
+        */
+        if (
+            (_swaps[swapId].valueDifference > 0 && valueDifference < 0) ||
+            (_swaps[swapId].valueDifference < 0 &&
+                _swaps[swapId].valueDifference > valueDifference)
+        ) {
+            // Maker to Contract
+            uint256 difference = _swaps[swapId].valueDifference >= 0
+                ? _abs(valueDifference)
+                : _abs(valueDifference - _swaps[swapId].valueDifference);
+            require(msg.value == difference, INVALID_BALANCE_TRANSFERRED);
+        } else if (
+            (_swaps[swapId].valueDifference < 0 && valueDifference > 0) ||
+            (_swaps[swapId].valueDifference < 0 &&
+                valueDifference < 0 &&
+                _swaps[swapId].valueDifference < valueDifference)
+        ) {
+            // Contract to Maker
+            uint256 difference = valueDifference >= 0
+                ? _abs(_swaps[swapId].valueDifference)
+                : _abs(valueDifference - _swaps[swapId].valueDifference);
+            _transferAmount(_swaps[swapId].makerAddress, difference);
+        }
     }
 }
