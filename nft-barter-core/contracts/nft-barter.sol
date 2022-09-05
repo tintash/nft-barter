@@ -280,8 +280,7 @@ contract NFTBarter is ERC721, INFTFixedBarter {
         returns (SwapOrder memory)
     {
         _swaps[swapId].status = SwapStatus.Cancelled;
-        SwapOrder memory swap = _swaps[swapId];
-        return swap;
+        return _swaps[swapId];
     }
 
     function _abs(int256 x) private pure returns (uint256) {
