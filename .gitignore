@@ -1,2 +1,4 @@
 #added node module to gitignore
 node_modules/
+.env
+**/nft-barter-core/build/
