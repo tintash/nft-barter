@@ -1,0 +1,31 @@
+{
+  "deployed": {
+    "development": {
+      "Migrations": "0x98ed9558a5C5D2c1E6E8C71b80CEce5Dd91d4b48",
+      "WyvernAtomicizer": "0xf6F5fAE0070f430EFBdB1d471981d49c331A3ba1",
+      "WyvernRegistry": "0x9177192F1299cf6EF117B10119a8f9c82B23fC2c",
+      "WyvernExchange": "0xA52BAbe9CF895207b3a9002D9432ea0150aC94c2",
+      "WyvernStatic": "0x5C35940BeB4ab63cC96810f869e3AdFeb91533C0",
+      "Atoms": "0x60cA0a84B3357893fEF83d23c69136F9754C285c",
+      "Neutrons": "0xbcF270BBf2bcE7611aff59d238e3b9F01a3D1aFd"
+    },
+    "goerli": {
+      "Migrations": "0x67F4797B0970d8E6Bd75a245fE0D1040751eA74f",
+      "WyvernAtomicizer": "0x2B06Af9b7cF2c9Cd5A9EC5AE4d4800DBA1FC0c06",
+      "WyvernRegistry": "0x8272296ecc12FFA46c42fb04d912A55b8e961556",
+      "WyvernExchange": "0x053022506Cf527665Ea0dd3E89823282C424B657",
+      "WyvernStatic": "0x6d917FC6605214F8E0785AA5cbC334cF4Feb93D8",
+      "Atoms": "0x295DA1e1D89148F0c6B78388913A630C8BDe8f54",
+      "Neutrons": "0x85B2aeC8F0196AaeD22a03F4cEa9F3719A73f0fD"
+    },
+    "mainnet": {
+      "Migrations": "0x2020bc01065f82f1ACfAcD93671FF339bD65f322",
+      "WyvernAtomicizer": "0x63A983B3cbb719024d4203A636118Ea899d14d2a",
+      "WyvernStatic": "0x32Ce15F191aFD85072A594f388A78D3f6Bf6a9Bf",
+      "WyvernRegistry": "0xa5409ec958C83C3f309868babACA7c86DCB077c1",
+      "WyvernExchange": "0xd7CA74fF003c90E62505D21ec7Dac36bCfD9F6f2",
+      "Atoms": "0xE211A15b1D91d6F79E6154A3158d75C5D8a8921F",
+      "Neutrons": "0xE433DCe98bd3C5D0e25939b80FDb3ADb8ccf6E03"
+    }
+  }
+}
